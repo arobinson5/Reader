@@ -43,4 +43,6 @@
 
 - (id)initWithReaderDocument:(ReaderDocument *)object;
 
+- (id)initWithReaderDocument:(ReaderDocument *)object andMainToolbarClassName:(NSString *)className;
+
 @end

@@ -36,6 +36,9 @@
 
 @interface ReaderViewController () <UIScrollViewDelegate, UIGestureRecognizerDelegate, MFMailComposeViewControllerDelegate,
 									ReaderMainToolbarDelegate, ReaderMainPagebarDelegate, ReaderContentViewDelegate, ThumbsViewControllerDelegate>
+
+@property (nonatomic, strong) NSString *mainToolbarClassName;
+
 @end
 
 @implementation ReaderViewController
@@ -280,6 +283,14 @@
 
 #pragma mark UIViewController methods
 
+- (id)initWithReaderDocument:(ReaderDocument *)object andMainToolbarClassName:(NSString *)className {
+    self = [self initWithReaderDocument:object];
+    if(self){
+        self.mainToolbarClassName = className;
+    }
+    return self;
+}
+
 - (id)initWithReaderDocument:(ReaderDocument *)object
 {
 	id reader = nil; // ReaderViewController object
@@ -299,6 +310,8 @@
 			[ReaderThumbCache touchThumbCacheWithGUID:object.guid]; // Touch the document thumb cache directory
 
 			reader = self; // Return an initialized ReaderViewController object
+            
+            self.mainToolbarClassName = @"ReaderMainToolbar";
 		}
 	}
 
@@ -334,7 +347,7 @@
 	CGRect toolbarRect = viewRect;
 	toolbarRect.size.height = TOOLBAR_HEIGHT;
 
-	mainToolbar = [[ReaderMainToolbar alloc] initWithFrame:toolbarRect document:document]; // At top
+	mainToolbar = [[NSClassFromString(self.mainToolbarClassName) alloc] initWithFrame:toolbarRect document:document]; // At top
 
 	mainToolbar.delegate = self;
 
