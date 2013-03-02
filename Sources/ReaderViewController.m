@@ -38,13 +38,11 @@
 									ReaderMainToolbarDelegate, ReaderMainPagebarDelegate, ReaderContentViewDelegate, ThumbsViewControllerDelegate>
 
 @property (nonatomic, strong) NSString *mainToolbarClassName;
-
+@property (nonatomic, strong) ReaderDocument *document;
 @end
 
 @implementation ReaderViewController
 {
-	ReaderDocument *document;
-
 	UIScrollView *theScrollView;
 
 	ReaderMainToolbar *mainToolbar;
@@ -81,7 +79,7 @@
 
 - (void)updateScrollViewContentSize
 {
-	NSInteger count = [document.pageCount integerValue];
+	NSInteger count = [_document.pageCount integerValue];
 
 	if (count > PAGING_VIEWS) count = PAGING_VIEWS; // Limit
 
@@ -107,7 +105,7 @@
 
 	__block CGRect viewRect = CGRectZero; viewRect.size = theScrollView.bounds.size;
 
-	__block CGPoint contentOffset = CGPointZero; NSInteger page = [document.pageNumber integerValue];
+	__block CGPoint contentOffset = CGPointZero; NSInteger page = [_document.pageNumber integerValue];
 
 	[pageSet enumerateIndexesUsingBlock: // Enumerate page number set
 		^(NSUInteger number, BOOL *stop)
@@ -130,9 +128,9 @@
 
 - (void)updateToolbarBookmarkIcon
 {
-	NSInteger page = [document.pageNumber integerValue];
+	NSInteger page = [_document.pageNumber integerValue];
 
-	BOOL bookmarked = [document.bookmarks containsIndex:page];
+	BOOL bookmarked = [_document.bookmarks containsIndex:page];
 
 	[mainToolbar setBookmarkState:bookmarked]; // Update
 }
@@ -142,7 +140,7 @@
 	if (page != currentPage) // Only if different
 	{
 		NSInteger minValue; NSInteger maxValue;
-		NSInteger maxPage = [document.pageCount integerValue];
+		NSInteger maxPage = [_document.pageCount integerValue];
 		NSInteger minPage = 1;
 
 		if ((page < minPage) || (page > maxPage)) return;
@@ -178,7 +176,7 @@
 
 			if (contentView == nil) // Create a brand new document content view
 			{
-				NSURL *fileURL = document.fileURL; NSString *phrase = document.password; // Document properties
+				NSURL *fileURL = _document.fileURL; NSString *phrase = _document.password; // Document properties
 
 				contentView = [[ReaderContentView alloc] initWithFrame:viewRect fileURL:fileURL page:number password:phrase];
 
@@ -231,12 +229,12 @@
 			theScrollView.contentOffset = contentOffset; // Update content offset
 		}
 
-		if ([document.pageNumber integerValue] != page) // Only if different
+		if ([_document.pageNumber integerValue] != page) // Only if different
 		{
-			document.pageNumber = [NSNumber numberWithInteger:page]; // Update page number
+			_document.pageNumber = [NSNumber numberWithInteger:page]; // Update page number
 		}
 
-		NSURL *fileURL = document.fileURL; NSString *phrase = document.password; NSString *guid = document.guid;
+		NSURL *fileURL = _document.fileURL; NSString *phrase = _document.password; NSString *guid = _document.guid;
 
 		if ([newPageSet containsIndex:page] == YES) // Preview visible page first
 		{
@@ -274,9 +272,9 @@
 {
 	[self updateScrollViewContentSize]; // Set content size
 
-	[self showDocumentPage:[document.pageNumber integerValue]];
+	[self showDocumentPage:[_document.pageNumber integerValue]];
 
-	document.lastOpen = [NSDate date]; // Update last opened date
+	_document.lastOpen = [NSDate date]; // Update last opened date
 
 	isVisible = YES; // iOS present modal bodge
 }
@@ -305,7 +303,7 @@
 
 			[notificationCenter addObserver:self selector:@selector(applicationWill:) name:UIApplicationWillResignActiveNotification object:nil];
 
-			[object updateProperties]; document = object; // Retain the supplied ReaderDocument object for our use
+			[object updateProperties]; self.document = object; // Retain the supplied ReaderDocument object for our use
 
 			[ReaderThumbCache touchThumbCacheWithGUID:object.guid]; // Touch the document thumb cache directory
 
@@ -322,7 +320,7 @@
 {
 	[super viewDidLoad];
 
-	assert(document != nil); // Must have a valid ReaderDocument
+	assert(_document != nil); // Must have a valid ReaderDocument
 
 	self.view.backgroundColor = [UIColor scrollViewTexturedBackgroundColor];
 
@@ -347,7 +345,7 @@
 	CGRect toolbarRect = viewRect;
 	toolbarRect.size.height = TOOLBAR_HEIGHT;
 
-	mainToolbar = [[NSClassFromString(self.mainToolbarClassName) alloc] initWithFrame:toolbarRect document:document]; // At top
+	mainToolbar = [[NSClassFromString(self.mainToolbarClassName) alloc] initWithFrame:toolbarRect document:_document]; // At top
 
 	mainToolbar.delegate = self;
 
@@ -357,7 +355,7 @@
 	pagebarRect.size.height = PAGEBAR_HEIGHT;
 	pagebarRect.origin.y = (viewRect.size.height - PAGEBAR_HEIGHT);
 
-	mainPagebar = [[ReaderMainPagebar alloc] initWithFrame:pagebarRect document:document]; // At bottom
+	mainPagebar = [[ReaderMainPagebar alloc] initWithFrame:pagebarRect document:_document]; // At bottom
 
 	mainPagebar.delegate = self;
 
@@ -536,8 +534,8 @@
 {
 	if (theScrollView.tag == 0) // Scroll view did end
 	{
-		NSInteger page = [document.pageNumber integerValue];
-		NSInteger maxPage = [document.pageCount integerValue];
+		NSInteger page = [_document.pageNumber integerValue];
+		NSInteger maxPage = [_document.pageCount integerValue];
 		NSInteger minPage = 1; // Minimum
 
 		if ((maxPage > minPage) && (page != minPage))
@@ -557,8 +555,8 @@
 {
 	if (theScrollView.tag == 0) // Scroll view did end
 	{
-		NSInteger page = [document.pageNumber integerValue];
-		NSInteger maxPage = [document.pageCount integerValue];
+		NSInteger page = [_document.pageNumber integerValue];
+		NSInteger maxPage = [_document.pageCount integerValue];
 		NSInteger minPage = 1; // Minimum
 
 		if ((maxPage > minPage) && (page != maxPage))
@@ -586,7 +584,7 @@
 
 		if (CGRectContainsPoint(areaRect, point)) // Single tap is inside the area
 		{
-			NSInteger page = [document.pageNumber integerValue]; // Current page #
+			NSInteger page = [_document.pageNumber integerValue]; // Current page #
 
 			NSNumber *key = [NSNumber numberWithInteger:page]; // Page number key
 
@@ -674,7 +672,7 @@
 
 		if (CGRectContainsPoint(zoomArea, point)) // Double tap is in the zoom area
 		{
-			NSInteger page = [document.pageNumber integerValue]; // Current page #
+			NSInteger page = [_document.pageNumber integerValue]; // Current page #
 
 			NSNumber *key = [NSNumber numberWithInteger:page]; // Page number key
 
@@ -744,9 +742,9 @@
 {
 #if (READER_STANDALONE == FALSE) // Option
 
-	[document saveReaderDocument]; // Save any ReaderDocument object changes
+	[_document saveReaderDocument]; // Save any ReaderDocument object changes
 
-	[[ReaderThumbQueue sharedInstance] cancelOperationsWithGUID:document.guid];
+	[[ReaderThumbQueue sharedInstance] cancelOperationsWithGUID:_document.guid];
 
 	[[ReaderThumbCache sharedInstance] removeAllObjects]; // Empty the thumb cache
 
@@ -768,7 +766,7 @@
 {
 	if (printInteraction != nil) [printInteraction dismissAnimated:NO]; // Dismiss
 
-	ThumbsViewController *thumbsViewController = [[ThumbsViewController alloc] initWithReaderDocument:document];
+	ThumbsViewController *thumbsViewController = [[ThumbsViewController alloc] initWithReaderDocument:_document];
 
 	thumbsViewController.delegate = self; thumbsViewController.title = self.title;
 
@@ -870,15 +868,15 @@
 {
 	if (printInteraction != nil) [printInteraction dismissAnimated:YES];
 
-	NSInteger page = [document.pageNumber integerValue];
+	NSInteger page = [_document.pageNumber integerValue];
 
-	if ([document.bookmarks containsIndex:page]) // Remove bookmark
+	if ([_document.bookmarks containsIndex:page]) // Remove bookmark
 	{
-		[mainToolbar setBookmarkState:NO]; [document.bookmarks removeIndex:page];
+		[mainToolbar setBookmarkState:NO]; [_document.bookmarks removeIndex:page];
 	}
 	else // Add the bookmarked page index to the bookmarks set
 	{
-		[mainToolbar setBookmarkState:YES]; [document.bookmarks addIndex:page];
+		[mainToolbar setBookmarkState:YES]; [_document.bookmarks addIndex:page];
 	}
 }
 
@@ -918,7 +916,7 @@
 
 - (void)applicationWill:(NSNotification *)notification
 {
-	[document saveReaderDocument]; // Save any ReaderDocument object changes
+	[_document saveReaderDocument]; // Save any ReaderDocument object changes
 
 	if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
 	{

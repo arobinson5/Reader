@@ -40,6 +40,7 @@
 @interface ReaderViewController : UIViewController
 
 @property (nonatomic, unsafe_unretained, readwrite) id <ReaderViewControllerDelegate> delegate;
+@property (nonatomic, readonly, strong) ReaderDocument *document;
 
 - (id)initWithReaderDocument:(ReaderDocument *)object;
 
